@@ -1,10 +1,7 @@
 const express = require("express");
-const { PrismaClient } = require("@prisma/client");
-
 const app = express();
-const prisma = new PrismaClient();
-const { user: User } = prisma;
-const { catchAsync } = require("./catchAsync");
+
+const Router = require("./router");
 
 app.use((req, res, next) => {
   console.log(`${req.method} : ${req.originalUrl}`);
@@ -18,83 +15,10 @@ app.use(
   })
 );
 
-app.get(
-  "/users",
-  catchAsync(async (req, res, next) => {
-    const allUsers = await User.findMany();
-    return res.status(200).json({
-      status: "success",
-      users: allUsers,
-    });
-  })
-);
+app.use("/users", Router.User);
+app.use("/posts", Router.Post);
 
-app.post(
-  "/users/new",
-  catchAsync(async (req, res, next) => {
-    const { name, email } = req.body;
-    const user = await User.create({
-      data: {
-        name: name,
-        email: email,
-      },
-    });
-    return res.status(201).json({
-      status: "success",
-      user: user,
-    });
-  })
-);
-
-app.patch(
-  "/users/:id",
-  catchAsync(async (req, res, next) => {
-    const updatedData = {
-      name: req.body.name,
-      email: req.body.email,
-    };
-
-    const updatedUser = await User.update({
-      where: {
-        id: req.params.id,
-      },
-      data: updatedData,
-    });
-
-    return res.status(200).json({
-      status: "success",
-      user: updatedUser,
-    });
-  })
-);
-
-app.get(
-  "/users/:id",
-  catchAsync(async (req, res, next) => {
-    const user = await User.findUnique({
-      where: {
-        id: req.params.id,
-      },
-      select: {
-        name: true,
-        email: true,
-      },
-    });
-
-    if (!user) {
-      return res.status(404).json({
-        status: "fail",
-        message: "no user found",
-      });
-    }
-    return res.status(200).json({
-      status: "success",
-      user: user,
-    });
-  })
-);
-
-app.post("*", (req, res, next) => {
+app.all("*", (req, res, next) => {
   return res.status(404).json({
     status: "fail",
     message: "endpoint not found",
